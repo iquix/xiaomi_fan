@@ -79,7 +79,6 @@ MODEL_FAN_P9 = "dmaker.fan.p9"
 MODEL_FAN_P10 = "dmaker.fan.p10"
 MODEL_FAN_P11 = "dmaker.fan.p11"
 MODEL_FAN_P15 = "dmaker.fan.p15"
-MODEL_FAN_P18 = "dmaker.fan.p18"
 MODEL_FAN_LESHOW_SS4 = "leshow.fan.ss4"
 MODEL_FAN_1C = "dmaker.fan.1c"
 
@@ -103,7 +102,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
                 MODEL_FAN_P10,
                 MODEL_FAN_P11,
                 MODEL_FAN_P15,
-                MODEL_FAN_P18,
                 MODEL_FAN_LESHOW_SS4,
                 MODEL_FAN_1C,
             ]
@@ -294,7 +292,7 @@ SERVICE_SCHEMA_OSCILLATION_ANGLE = AIRPURIFIER_SERVICE_SCHEMA.extend(
 SERVICE_SCHEMA_DELAY_OFF = AIRPURIFIER_SERVICE_SCHEMA.extend(
     {
         vol.Required(ATTR_DELAY_OFF_COUNTDOWN): vol.All(
-            vol.Coerce(int), vol.Clamp(min=0, max=480)
+            vol.Coerce(int), vol.In([0, 60, 120, 180, 240, 300, 360, 420, 480])
         )
     }
 )
@@ -372,8 +370,8 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         device = XiaomiFanMiot(
             name, fan, model, unique_id, retries, preset_modes_override
         )
-    elif model in [MODEL_FAN_P10, MODEL_FAN_P18]:
-        fan = FanP10(host, token, model=MODEL_FAN_P10)
+    elif model == MODEL_FAN_P10:
+        fan = FanP10(host, token, model=model)
         device = XiaomiFanMiot(
             name, fan, model, unique_id, retries, preset_modes_override
         )
@@ -945,6 +943,12 @@ class XiaomiFanP5(XiaomiFan):
 
 
 class XiaomiFanMiot(XiaomiFanP5):
+    """Representation of a Xiaomi Pedestal Fan P9, P10, P11."""
+    @property
+    def percentage_step(self) -> float:
+        """Return the step size for percentage."""
+        return 1
+
     """Representation of a Xiaomi Pedestal Fan P9, P10, P11, P18."""
     async def async_set_natural_mode_on(self):
         """Turn the natural mode on."""
@@ -966,8 +970,7 @@ class XiaomiFanMiot(XiaomiFanP5):
             "Setting fan natural mode of the miio device failed.",
             self._device.set_mode,
             FanOperationModeMiot.Normal,
-        )
-
+        )        
 
 class XiaomiFanLeshow(XiaomiGenericDevice):
     """Representation of a Xiaomi Fan Leshow SS4."""
